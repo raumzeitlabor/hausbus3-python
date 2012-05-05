@@ -14,7 +14,7 @@ class HausbusHandler(BaseHTTPRequestHandler):
 			else:
 				self.send404()
 		else:
-			send404()
+			self.send404()
 		return
 		
 #	def do_POST(self):
