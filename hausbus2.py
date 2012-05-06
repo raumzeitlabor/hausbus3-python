@@ -1,5 +1,6 @@
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import socket
+import json
 
 variables = {}
 
@@ -7,11 +8,11 @@ class HausbusHandler(BaseHTTPRequestHandler):
 
 	def do_GET(self):
 		if self.path == "/_/state":
-			self.sendJSON(str(compactVariables()))
+			self.sendJSON(compactVariables())
 		elif self.path.startswith("/_/state/"):
 			variable_name = self.path.replace("/_/state/","",1)
 			if variable_name in compactVariables():
-				self.sendJSON(str({variable_name:compactVariables()[variable_name]}))
+				self.sendJSON({variable_name:compactVariables()[variable_name]})
 			else:
 				self.send404()
 		else:
@@ -32,11 +33,11 @@ class HausbusHandler(BaseHTTPRequestHandler):
 		self.wfile.write("File not found! - RZL Hausbus2 Python Server\n")
 		return
 	
-	def sendJSON(self, json):
+	def sendJSON(self, content):
 		self.send_response(200)
 		self.send_header('Content-type', 'application/json')
 		self.end_headers()
-		self.wfile.write(json + "\n")
+		self.wfile.write(json.dumps(content) + "\n")
 		return
 
 class HTTPServerV6(HTTPServer):
