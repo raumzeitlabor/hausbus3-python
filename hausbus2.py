@@ -1,4 +1,5 @@
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+import socket
 
 variables = {}
 
@@ -38,9 +39,12 @@ class HausbusHandler(BaseHTTPRequestHandler):
 		self.wfile.write(json + "\n")
 		return
 
+class HTTPServerV6(HTTPServer):
+	address_family = socket.AF_INET6
+
 def start(port):
 	try:
-		server = HTTPServer(('', port), HausbusHandler)
+		server = HTTPServerV6(('::', port,0,0), HausbusHandler)
 		print 'started Hausbus2 server...'
 		server.serve_forever()
 	except KeyboardInterrupt:
