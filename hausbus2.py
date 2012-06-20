@@ -1,6 +1,7 @@
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import socket
 import json
+from sys import exit
 
 variables = {}
 
@@ -51,6 +52,7 @@ def start(port):
 	except KeyboardInterrupt:
 		print '^C received, shutting down server'
 		server.socket.close()
+		exit(1)
 
 def compactVariables():
 	out = {}
