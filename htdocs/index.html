@@ -1,1 +1,32 @@
-It works!
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>RaumZeitLabor Hausbus</title>
+		<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
+		<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+		
+		<script>
+		$(document).ready(function() {
+			$.ajax({
+				url: '/_/state',
+				success: function(data) {
+					var out = "";
+					for (var key in data) {
+						out += "<h2>" + key + "</h2>\n";
+						for (var sub_key in data[key]) {
+							out += sub_key + ": " + data[key][sub_key]+"<br>";
+						}
+					}
+					$("#output").html(out);
+				}
+			});	
+		});
+		</script>
+	</head>
+
+	<body>
+		<h1>Hausbus2 Device WebUI</h1>
+		<div id="output">loading...</div>
+	</body>
+</html>

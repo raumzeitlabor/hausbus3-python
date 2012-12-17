@@ -11,7 +11,7 @@ class HausbusHandler(BaseHTTPRequestHandler):
 
 	def do_GET(self):
 		if self.path == "/_/state":
-			self.sendJSON(compactVariables())
+			self.sendJSON(variables)
 		elif self.path.startswith("/_/state/"):
 			variable_name = self.path.replace("/_/state/","",1)
 			if variable_name in compactVariables():
