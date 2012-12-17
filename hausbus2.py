@@ -2,6 +2,8 @@ from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import socket
 import json
 from sys import exit
+import os
+import mimetypes
 
 variables = {}
 
@@ -16,6 +18,11 @@ class HausbusHandler(BaseHTTPRequestHandler):
 				self.sendJSON({variable_name:compactVariables()[variable_name]})
 			else:
 				self.send404()
+		elif os.path.isfile("htdocs" + self.path):
+			self.serveHtdocs()
+		elif os.path.isfile("htdocs" + self.path +"index.html"):
+			self.path = self.path + "index.html"
+			self.serveHtdocs()
 		else:
 			self.send404()
 		return
@@ -39,6 +46,15 @@ class HausbusHandler(BaseHTTPRequestHandler):
 		self.send_header('Content-type', 'application/json')
 		self.end_headers()
 		self.wfile.write(json.dumps(content) + "\n")
+		return
+		
+	def serveHtdocs(self):
+		self.send_response(200)
+		(mtype, encoding) = mimetypes.guess_type('htdocs' + self.path)
+		self.send_header('Content-type', mtype)
+		self.end_headers()
+		f = open('htdocs' + self.path, 'r')
+		self.wfile.write(f.read())
 		return
 
 class HTTPServerV6(HTTPServer):
