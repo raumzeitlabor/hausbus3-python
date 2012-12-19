@@ -52,8 +52,13 @@ class HausbusHandler(BaseHTTPRequestHandler):
 		self.send_response(200)
 		(mtype, encoding) = mimetypes.guess_type('htdocs' + self.path)
 		self.send_header('Content-type', mtype)
+		f = open('htdocs' + self.path, 'rb')
+		
+		fs = os.fstat(f.fileno())
+		self.send_header("Content-Length", str(fs[6]))
+		self.send_header("Last-Modified", self.date_time_string(fs.st_mtime))
+		self.send_header("Cache-Control", "public, max-age=86400")
 		self.end_headers()
-		f = open('htdocs' + self.path, 'r')
 		self.wfile.write(f.read())
 		return
 
