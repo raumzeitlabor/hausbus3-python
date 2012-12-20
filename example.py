@@ -21,4 +21,4 @@ hausbus2.variables["pinpad"]["wrongpins"] = 3
 hausbus2.variables["pinpad"]["msg"] = "Willkommen im RZL"
 
 # start the Hausbus2 server on port 8080
-hausbus2.start(8080)
+hausbus2.start(8080, https_port=4443, keyfile='server.key', certfile='server.crt')

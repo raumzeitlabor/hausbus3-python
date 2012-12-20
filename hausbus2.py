@@ -4,6 +4,8 @@ import json
 from sys import exit
 import os
 import mimetypes
+import ssl
+import threading
 
 variables = {}
 
@@ -62,17 +64,37 @@ class HausbusHandler(BaseHTTPRequestHandler):
 		self.wfile.write(f.read())
 		return
 
+# HTTP server with IPv4 and IPv6 capability
 class HTTPServerV6(HTTPServer):
 	address_family = socket.AF_INET6
 
-def start(port):
+# Default entry point for hausbus2 server applications. Starts up a
+# HTTP server, and HTTPS server if it gets the configuration settings.
+# See example.py for an example
+def start(http_port, https_port=None, keyfile=None, certfile=None):
 	try:
-		server = HTTPServerV6(('::', port,0,0), HausbusHandler)
-		print 'started Hausbus2 server...'
-		server.serve_forever()
+		# Start HTTP server
+		http_server = HTTPServerV6(('::', http_port,0,0), HausbusHandler)
+		threading.Thread(target=http_server.serve_forever).start()
+		
+		# Start HTTPS server, if required
+		if https_port != None:
+			https_server = HTTPServerV6(('::', https_port,0,0), HausbusHandler)
+			https_server.socket = ssl.wrap_socket(https_server.socket, keyfile=keyfile, certfile=certfile, server_side=True)
+			threading.Thread(target=https_server.serve_forever).start()
+			
+		print 'started Hausbus2 server.'
+		
+		while 1:
+			pass
+
+	# Ctrl-C interupts our server magic
 	except KeyboardInterrupt:
 		print '^C received, shutting down server'
-		server.socket.close()
+		http_server.shutdown()	# shutdown HTTP server
+		if https_port != None:	# shutdown HTTPS server if running
+			https_server.shutdown()
+			
 		exit(1)
 
 def compactVariables():
