@@ -8,6 +8,7 @@ import ssl
 import threading
 
 variables = {}
+base_path = os.path.dirname(os.path.realpath(os.path.abspath(__file__)))
 
 class HausbusHandler(BaseHTTPRequestHandler):
 
@@ -20,9 +21,9 @@ class HausbusHandler(BaseHTTPRequestHandler):
 				self.sendJSON({variable_name:compactVariables()[variable_name]})
 			else:
 				self.send404()
-		elif os.path.isfile("htdocs" + self.path):
+		elif os.path.isfile(base_path + "/htdocs" + self.path):
 			self.serveHtdocs()
-		elif os.path.isfile("htdocs" + self.path +"index.html"):
+		elif os.path.isfile(base_path + "/htdocs" + self.path +"index.html"):
 			self.path = self.path + "index.html"
 			self.serveHtdocs()
 		else:
@@ -51,10 +52,11 @@ class HausbusHandler(BaseHTTPRequestHandler):
 		return
 		
 	def serveHtdocs(self):
+		file_path = base_path + "/htdocs" + self.path
 		self.send_response(200)
-		(mtype, encoding) = mimetypes.guess_type('htdocs' + self.path)
+		(mtype, encoding) = mimetypes.guess_type(file_path)
 		self.send_header('Content-type', mtype)
-		f = open('htdocs' + self.path, 'rb')
+		f = open(file_path, 'rb')
 		
 		fs = os.fstat(f.fileno())
 		self.send_header("Content-Length", str(fs[6]))

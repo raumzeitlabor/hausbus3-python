@@ -2,6 +2,9 @@
 
 # Import the Hausbus2 module
 import hausbus2
+import os
+
+base_path = os.path.dirname(os.path.realpath(os.path.abspath(__file__)))
 
 # Set variables to be served via the Hausbs2 Server
 hausbus2.variables["temperature"] = {}
@@ -21,4 +24,4 @@ hausbus2.variables["pinpad"]["wrongpins"] = 3
 hausbus2.variables["pinpad"]["msg"] = "Willkommen im RZL"
 
 # start the Hausbus2 server on port 8080
-hausbus2.start(8080, https_port=4443, keyfile='example.key', certfile='example.crt')
+hausbus2.start(8080, https_port=4443, keyfile=base_path + '/example.key', certfile=base_path + '/example.crt')
