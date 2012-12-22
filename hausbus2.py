@@ -6,9 +6,13 @@ import os
 import mimetypes
 import ssl
 import threading
+import time
 
+bus_id = ""
+features = { "http": {}, "https": {}}
 variables = {}
 base_path = os.path.dirname(os.path.realpath(os.path.abspath(__file__)))
+running = False
 
 class HausbusHandler(BaseHTTPRequestHandler):
 
@@ -18,7 +22,7 @@ class HausbusHandler(BaseHTTPRequestHandler):
 		elif self.path.startswith("/_/state/"):
 			variable_name = self.path.replace("/_/state/","",1)
 			if variable_name in compactVariables():
-				self.sendJSON({variable_name:compactVariables()[variable_name]})
+				self.sendJSON({variable_name: _compactVariables()[variable_name]})
 			else:
 				self.send404()
 		elif os.path.isfile(base_path + "/htdocs" + self.path):
@@ -70,17 +74,47 @@ class HausbusHandler(BaseHTTPRequestHandler):
 class HTTPServerV6(HTTPServer):
 	address_family = socket.AF_INET6
 
+
+def self_monitoring():
+	variables["system"] = {}
+	variables["system"]["id"] = bus_id
+	while running:
+		variables["system"]["features"] = features
+		f = open('/proc/uptime', 'r')
+		variables["system"]["uptime"] = f.readline().split()[0]
+		f.close
+		f = open('/proc/loadavg', 'r')
+		loadavg = f.readline().split()
+		variables["system"]["loadavg"] = loadavg[0] + " " + loadavg[1] + " " + loadavg[2]
+		f.close()
+		time.sleep(10)
+		
+
 # Default entry point for hausbus2 server applications. Starts up a
 # HTTP server, and HTTPS server if it gets the configuration settings.
 # See example.py for an example
-def start(http_port, https_port=None, keyfile=None, certfile=None):
+def start(devicename, http_port=None, https_port=None, keyfile=None, certfile=None):
+	global bus_id, running, features
 	try:
+		bus_id = devicename
+		
+		running = True
+		
+		# Start selfmonitoring thread
+		monitor_thread = threading.Thread(target=self_monitoring)
+		monitor_thread.start()
+		
 		# Start HTTP server
-		http_server = HTTPServerV6(('::', http_port,0,0), HausbusHandler)
-		threading.Thread(target=http_server.serve_forever).start()
+		if http_port != None:
+			features["http"]["enabled"] = True
+			features["http"]["port"] = http_port
+			http_server = HTTPServerV6(('::', http_port,0,0), HausbusHandler)
+			threading.Thread(target=http_server.serve_forever).start()
 		
 		# Start HTTPS server, if required
 		if https_port != None:
+			features["https"]["enabled"] = True
+			features["https"]["port"] = https_port
 			https_server = HTTPServerV6(('::', https_port,0,0), HausbusHandler)
 			https_server.socket = ssl.wrap_socket(https_server.socket, keyfile=keyfile, certfile=certfile, server_side=True)
 			threading.Thread(target=https_server.serve_forever).start()
@@ -88,18 +122,30 @@ def start(http_port, https_port=None, keyfile=None, certfile=None):
 		print 'started Hausbus2 server.'
 		
 		while 1:
-			pass
+			time.sleep(10)
 
 	# Ctrl-C interupts our server magic
 	except KeyboardInterrupt:
 		print '^C received, shutting down server'
-		http_server.shutdown()	# shutdown HTTP server
-		if https_port != None:	# shutdown HTTPS server if running
-			https_server.shutdown()
 			
-		exit(1)
+	running = False
+	if https_port != None:	# shutdown HTTP server
+		http_server.shutdown()
+	if https_port != None:	# shutdown	 HTTPS server if running
+		https_server.shutdown()
+	exit(1)
 
-def compactVariables():
+def set(major_key, minor_key, value, publish = True):
+	if not major_key in variables:
+		variables[major_key] = {}
+	
+	variables[major_key][minor_key] = value
+	
+	if publish:
+		#Do some publishing stuff, maybe sometime.
+		pass
+
+def _compactVariables():
 	out = {}
 	for major_key,minor_variables in variables.items():
 		for minor_key,value in minor_variables.items():
