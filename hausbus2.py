@@ -7,12 +7,16 @@ import mimetypes
 import ssl
 import threading
 import time
+import mosquitto
 
 bus_id = ""
-features = { "http": {}, "https": {}}
+features = { "http": {}, "https": {}, "mqtt": {}}
 variables = {}
 base_path = os.path.dirname(os.path.realpath(os.path.abspath(__file__)))
 running = False
+mqtt = None
+http_server = None
+https_server = None
 
 class HausbusHandler(BaseHTTPRequestHandler):
 
@@ -73,8 +77,13 @@ class HausbusHandler(BaseHTTPRequestHandler):
 # HTTP server with IPv4 and IPv6 capability
 class HTTPServerV6(HTTPServer):
 	address_family = socket.AF_INET6
+	thread = None
+	
+	def startThread(self):
+		thread = threading.Thread(target=self.serve_forever)
+		thread.start()
 
-
+# Basic self monitoring infos on the api
 def self_monitoring():
 	variables["system"] = {}
 	variables["system"]["id"] = bus_id
@@ -87,63 +96,90 @@ def self_monitoring():
 		loadavg = f.readline().split()
 		variables["system"]["loadavg"] = loadavg[0] + " " + loadavg[1] + " " + loadavg[2]
 		f.close()
+		publish("system")
 		time.sleep(10)
 		
 
 # Default entry point for hausbus2 server applications. Starts up a
 # HTTP server, and HTTPS server if it gets the configuration settings.
 # See example.py for an example
-def start(devicename, http_port=None, https_port=None, keyfile=None, certfile=None):
-	global bus_id, running, features
-	try:
-		bus_id = devicename
+def start(devicename, http_port=None, https_port=None, keyfile=None, certfile=None, mqtt_broker=None):
+	global bus_id, running, features, http_server, https_server
+	
+	bus_id = devicename
+	
+	running = True
+	
+	# Start HTTP server
+	if http_port != None:
+		features["http"]["enabled"] = True
+		features["http"]["port"] = http_port
+		http_server = HTTPServerV6(('::', http_port,0,0), HausbusHandler)
+		http_server.startThread()
+	
+	# Start HTTPS server, if required
+	if https_port != None:
+		features["https"]["enabled"] = True
+		features["https"]["port"] = https_port
+		https_server = HTTPServerV6(('::', https_port,0,0), HausbusHandler)
+		https_server.socket = ssl.wrap_socket(https_server.socket, keyfile=keyfile, certfile=certfile, server_side=True)
+		https_server.startThread()
+	
+	# Start MQTT client
+	if mqtt_broker != None:
+		features["mqtt"]["enabled"] = True
+		features["mqtt"]["port"] = mqtt_broker
+		mqtt_init(mqtt_broker)
 		
-		running = True
-		
-		# Start selfmonitoring thread
-		monitor_thread = threading.Thread(target=self_monitoring)
-		monitor_thread.start()
-		
-		# Start HTTP server
-		if http_port != None:
-			features["http"]["enabled"] = True
-			features["http"]["port"] = http_port
-			http_server = HTTPServerV6(('::', http_port,0,0), HausbusHandler)
-			threading.Thread(target=http_server.serve_forever).start()
-		
-		# Start HTTPS server, if required
-		if https_port != None:
-			features["https"]["enabled"] = True
-			features["https"]["port"] = https_port
-			https_server = HTTPServerV6(('::', https_port,0,0), HausbusHandler)
-			https_server.socket = ssl.wrap_socket(https_server.socket, keyfile=keyfile, certfile=certfile, server_side=True)
-			threading.Thread(target=https_server.serve_forever).start()
-			
-		print 'started Hausbus2 server.'
-		
-		while 1:
-			time.sleep(10)
+	# Start selfmonitoring thread
+	monitor_thread = threading.Thread(target=self_monitoring)
+	monitor_thread.start()
+	
+	print 'started Hausbus2 server.'
 
-	# Ctrl-C interupts our server magic
-	except KeyboardInterrupt:
-		print '^C received, shutting down server'
-			
+
+def stop():
+	global running
 	running = False
-	if https_port != None:	# shutdown HTTP server
+	if features["http"]["enabled"]:	# shutdown HTTP server
 		http_server.shutdown()
-	if https_port != None:	# shutdown	 HTTPS server if running
+	if features["https"]["enabled"]:	# shutdown	 HTTPS server if running
 		https_server.shutdown()
-	exit(1)
+		https_server.socket.close()
+	if features["mqtt"]["enabled"]:
+		mqtt.disconnect()
+	
+	
+def mqtt_init(broker):
+	global mqtt
+	
+	if not hasattr(mosquitto.Mosquitto, "loop_forever"):
+		print "Your python mosquitto library is too old. Use v16 or higher. Disabling MQTT integtration."
+		features["mqtt"]["enabled"] = False
+	else:
+		mqtt = mosquitto.Mosquitto(bus_id, clean_session=False)
+		mqtt.will_set(topic="/monitor", payload=bus_id+" died")
+		mqtt.connect(broker)
+		mqtt.subscribe("/device/"+bus_id+"/control", 2)
+		#mqtt.on_message = on_message
+		threading.Thread(target=mqtt.loop_forever).start()
 
-def set(major_key, minor_key, value, publish = True):
+def mqtt_publish(major_key):
+	if features["mqtt"]["enabled"]:
+		mqtt.publish("/device/"+bus_id+"/"+major_key, json.dumps(variables[major_key]), 1)
+
+def publish(major_key):
+	mqtt_publish(major_key)
+	
+# Update a hausbus variable, and publish it automatically (or not)
+def update(major_key, minor_key, value, auto_publish = True):
 	if not major_key in variables:
 		variables[major_key] = {}
 	
 	variables[major_key][minor_key] = value
-	
-	if publish:
-		#Do some publishing stuff, maybe sometime.
-		pass
+
+	if auto_publish:
+		publish(major_key)
 
 def _compactVariables():
 	out = {}
