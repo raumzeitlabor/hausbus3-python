@@ -147,6 +147,7 @@ def stop():
 		https_server.shutdown()
 		https_server.socket.close()
 	if features["mqtt"]["enabled"]:
+		mqtt.publish("/monitor", json.dumps({"event": "service_shutdown","device": bus_id}), 1)
 		mqtt.disconnect()
 	
 	
@@ -158,7 +159,7 @@ def mqtt_init(broker):
 		features["mqtt"]["enabled"] = False
 	else:
 		mqtt = mosquitto.Mosquitto(bus_id, clean_session=False)
-		mqtt.will_set(topic="/monitor", payload=bus_id+" died")
+		mqtt.will_set(topic="/monitor", payload=json.dumps({"event": "unexpected_disconnect","device": bus_id}))
 		mqtt.connect(broker)
 		mqtt.subscribe("/device/"+bus_id+"/control", 2)
 		#mqtt.on_message = on_message
