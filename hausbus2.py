@@ -135,7 +135,7 @@ def start(devicename, http_port=None, https_port=None, keyfile=None, certfile=No
 	monitor_thread = threading.Thread(target=self_monitoring)
 	monitor_thread.start()
 	
-	print 'started Hausbus2 server.'
+	print >> sys.stderr, 'started Hausbus2 server.'
 
 
 def stop():
@@ -155,7 +155,7 @@ def mqtt_init(broker):
 	global mqtt
 	
 	if not hasattr(mosquitto.Mosquitto, "loop_forever"):
-		print "Your python mosquitto library is too old. Use v16 or higher. Disabling MQTT integtration."
+		print >> sys.stderr, "Your python mosquitto library is too old. Use v16 or higher. Disabling MQTT integtration."
 		features["mqtt"]["enabled"] = False
 	else:
 		mqtt = mosquitto.Mosquitto(bus_id, clean_session=False)
