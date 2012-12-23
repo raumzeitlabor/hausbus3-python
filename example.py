@@ -23,6 +23,7 @@ hausbus2.update("pinpad", "lastsync", 1321819942, False)
 hausbus2.update("pinpad", "wrongpins", 3, False)
 hausbus2.update("pinpad", "msg", "Willkommen im RZL")
 
+hausbus2.update("windows","state", [["x", "1", "x", "x", "0", "x", "x", "?", "x", "x", "?", "x"], ["x", "0", "0", "?", "0", "x", "x", "0", "?", "0", "0", "x"]])
 try:
 	while 1:
 		time.sleep(10)

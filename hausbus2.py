@@ -1,7 +1,7 @@
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import socket
 import json
-from sys import exit
+import sys
 import os
 import mimetypes
 import ssl
