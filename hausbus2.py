@@ -10,7 +10,7 @@ import time
 import mosquitto
 
 bus_id = ""
-features = { "http": {}, "https": {}, "mqtt": {}}
+features = { "http": {"enabled": False}, "https": {"enabled": False}, "mqtt": {"enabled": False}}
 variables = {}
 base_path = os.path.dirname(os.path.realpath(os.path.abspath(__file__)))
 running = False
@@ -155,7 +155,7 @@ def mqtt_init(broker):
 	global mqtt
 	
 	if not hasattr(mosquitto.Mosquitto, "loop_forever"):
-		print >> sys.stderr, "Your python mosquitto library is too old. Use v16 or higher. Disabling MQTT integtration."
+		print >> sys.stderr, "Your python mosquitto library is too old. Use v16 or higher. Disabling MQTT integration."
 		features["mqtt"]["enabled"] = False
 	else:
 		mqtt = mosquitto.Mosquitto(bus_id, clean_session=False)
