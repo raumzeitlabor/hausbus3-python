@@ -191,6 +191,10 @@ def update_group(major_key, value, auto_publish = True):
 	if auto_publish:
 		publish(major_key)
 
+# Clear any retained messages
+def clear_retain(major_key):
+	mqtt.publish("/device/"+bus_id+"/"+major_key, "", 1)
+
 def _compactVariables():
 	out = {}
 	for major_key,minor_variables in variables.items():
