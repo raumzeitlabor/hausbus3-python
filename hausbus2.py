@@ -165,14 +165,14 @@ def mqtt_init(broker):
 		#mqtt.on_message = on_message
 		threading.Thread(target=mqtt.loop_forever).start()
 
-def mqtt_publish(major_key):
+def mqtt_publish(major_key, qos = 1, retain = False):
 	if features["mqtt"]["enabled"]:
 		output = variables[major_key].copy()
 		output["_timestamp"] = time.time()
-		mqtt.publish("/device/"+bus_id+"/"+major_key, json.dumps(output), 1)
+		mqtt.publish("/device/"+bus_id+"/"+major_key, json.dumps(output), qos)
 
-def publish(major_key):
-	mqtt_publish(major_key)
+def publish(major_key, qos = 1, retain = False):
+	mqtt_publish(major_key, qos, retain)
 	
 # Update a hausbus variable, and publish it automatically (or not)
 def update(major_key, minor_key, value, auto_publish = True):
@@ -180,6 +180,13 @@ def update(major_key, minor_key, value, auto_publish = True):
 		variables[major_key] = {}
 	
 	variables[major_key][minor_key] = value
+
+	if auto_publish:
+		publish(major_key)
+
+# Update a group of hausbus variables, and publish it automatically (or not)
+def update_group(major_key, value, auto_publish = True):
+	variables[major_key] = value
 
 	if auto_publish:
 		publish(major_key)
