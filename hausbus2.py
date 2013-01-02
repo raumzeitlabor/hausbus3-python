@@ -168,7 +168,7 @@ def mqtt_init(broker):
 def mqtt_publish(major_key, qos = 1, retain = False):
 	if features["mqtt"]["enabled"]:
 		output = variables[major_key].copy()
-		output["_timestamp"] = time.time()
+		output["_timestamp"] = time.strftime("%s")
 		mqtt.publish("/device/"+bus_id+"/"+major_key, json.dumps(output), qos)
 
 def publish(major_key, qos = 1, retain = False):
