@@ -49,7 +49,7 @@ class HausbusHandler(BaseHTTPRequestHandler):
 		self.send_response(404)
 		self.send_header('Content-type', 'text/plain')
 		self.end_headers()
-		self.wfile.write("File not found! - RZL Hausbus2 Python Server\n")
+		self.wfile.write("File not found! - RZL Hausbus3 Python Server\n")
 		return
 	
 	def sendJSON(self, content):
@@ -135,7 +135,7 @@ def start(devicename, http_port=None, https_port=None, keyfile=None, certfile=No
 	monitor_thread = threading.Thread(target=self_monitoring)
 	monitor_thread.start()
 	
-	print >> sys.stderr, 'started Hausbus2 server.'
+	print >> sys.stderr, 'started Hausbus3 server.'
 
 
 def stop():
